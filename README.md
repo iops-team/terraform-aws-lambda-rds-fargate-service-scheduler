@@ -88,7 +88,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_event_description"></a> [event\_description](#input\_event\_description) | Cloudwatch event description | `string` | `null` | no |
-| <a name="input_events"></a> [events](#input\_events) | Map of event objects | <pre>map(object({<br>    desired_count            = string<br>    tag_key                  = string<br>    tag_value                = string<br>    cron_schedule_expression = string<br>    rds_action               = string<br>  }))</pre> | `{}` | no |
+| <a name="input_events"></a> [events](#input\_events) | Map of event objects | <pre>map(object({<br>    desired_count            = string<br>    tag_key                  = string<br>    tag_value                = string<br>    cron_schedule_expression = string<br>    rds_action               = string<br>  }))</pre> | `{}` | yes |
 | <a name="input_lambda_function_name"></a> [lambda\_function\_name](#input\_lambda\_function\_name) | Name of the Lambda function | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
 
