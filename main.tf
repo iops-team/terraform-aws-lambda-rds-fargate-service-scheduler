@@ -18,11 +18,18 @@ def lambda_handler(event, context):
     # Collect information about ECS and RDS resources with the corresponding tags
     clusters = ecs_client.list_clusters()['clusterArns']
     for cluster in clusters:
+        cluster_tags = ecs_client.list_tags_for_resource(resourceArn=cluster)['tags']
+        cluster_has_tag = False
+        for tag in cluster_tags:
+            if tag['key'] == tag_key and tag['value'] == tag_value:
+                cluster_has_tag = True
+                break
+
         services = ecs_client.list_services(cluster=cluster)['serviceArns']
         for service in services:
-            tags = ecs_client.list_tags_for_resource(resourceArn=service)['tags']
-            for tag in tags:
-                if tag['key'] == tag_key and tag['value'] == tag_value:
+            service_tags = ecs_client.list_tags_for_resource(resourceArn=service)['tags']
+            for tag in service_tags:
+                if tag['key'] == tag_key and tag['value'] == tag_value or cluster_has_tag:
                     ecs_actions.append({'cluster': cluster, 'service': service, 'desiredCount': desired_count})
                     break
 
@@ -55,6 +62,7 @@ def lambda_handler(event, context):
 EOF
   filename = "${path.module}/lambda_files/lambda_function.py"
 }
+
 
 
 data "archive_file" "lambda_zip" {
@@ -133,7 +141,7 @@ resource "aws_lambda_function" "lambda_function" {
   function_name = var.lambda_function_name
   role          = aws_iam_role.lambda_role.arn
   handler       = "lambda_function.lambda_handler"
-  timeout       = 30
+  timeout       = var.timeout
 
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
