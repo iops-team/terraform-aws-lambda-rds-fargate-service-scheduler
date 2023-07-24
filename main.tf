@@ -6,13 +6,16 @@ import os
 def lambda_handler(event, context):
     ecs_client = boto3.client('ecs')
     rds_client = boto3.client('rds')
+    
+    ecs_actions = []  # To store ECS actions
+    rds_actions = []  # To store RDS actions
 
     tag_key = event['tag_key']
     tag_value = event['tag_value']
     desired_count = int(event['desired_count'])
     rds_action = event['rds_action']
 
-    # Update ECS services
+    # Collect information about ECS and RDS resources with the corresponding tags
     clusters = ecs_client.list_clusters()['clusterArns']
     for cluster in clusters:
         services = ecs_client.list_services(cluster=cluster)['serviceArns']
@@ -20,32 +23,34 @@ def lambda_handler(event, context):
             tags = ecs_client.list_tags_for_resource(resourceArn=service)['tags']
             for tag in tags:
                 if tag['key'] == tag_key and tag['value'] == tag_value:
-                    ecs_client.update_service(cluster=cluster, service=service, desiredCount=desired_count)
-                    print(f"Updated ECS service: {service}")
-                else:
-                    print(f"Skipped ECS service: {service} - Does not match tag criteria")
+                    ecs_actions.append({'cluster': cluster, 'service': service, 'desiredCount': desired_count})
+                    break
 
-    # Update RDS instances
     instances = rds_client.describe_db_instances()['DBInstances']
     for instance in instances:
         tags = rds_client.list_tags_for_resource(ResourceName=instance['DBInstanceArn'])['TagList']
         for tag in tags:
             if tag['Key'] == tag_key and tag['Value'] == tag_value:
                 if rds_action == 'start' and instance['DBInstanceStatus'] == 'stopped':
-                    rds_client.start_db_instance(DBInstanceIdentifier=instance['DBInstanceIdentifier'])
-                    print(f"Started RDS instance: {instance['DBInstanceIdentifier']}")
+                    rds_actions.append({'action': 'start', 'instanceIdentifier': instance['DBInstanceIdentifier']})
                 elif rds_action == 'stop' and instance['DBInstanceStatus'] == 'available':
-                    rds_client.stop_db_instance(DBInstanceIdentifier=instance['DBInstanceIdentifier'])
-                    print(f"Stopped RDS instance: {instance['DBInstanceIdentifier']}")
-                else:
-                    if rds_action == 'start' and instance['DBInstanceStatus'] != 'stopped':
-                        print(f"Skipped RDS instance: {instance['DBInstanceIdentifier']} - Not in 'stopped' state")
-                    elif rds_action == 'stop' and instance['DBInstanceStatus'] != 'available':
-                        print(f"Skipped RDS instance: {instance['DBInstanceIdentifier']} - Not in 'available' state")
-                    else:
-                        print(f"Skipped RDS instance: {instance['DBInstanceIdentifier']} - Invalid action")
-            else:
-                print(f"Skipped RDS instance: {instance['DBInstanceIdentifier']} - Does not match tag criteria")
+                    rds_actions.append({'action': 'stop', 'instanceIdentifier': instance['DBInstanceIdentifier']})
+                break
+
+    # Execute the collected ECS actions
+    for action in ecs_actions:
+        ecs_client.update_service(cluster=action['cluster'], service=action['service'], desiredCount=action['desiredCount'])
+        print(f"Updated ECS service: {action['service']}")
+
+    # Execute the collected RDS actions
+    for action in rds_actions:
+        instance_id = action['instanceIdentifier']
+        if action['action'] == 'start':
+            rds_client.start_db_instance(DBInstanceIdentifier=instance_id)
+            print(f"Started RDS instance: {instance_id}")
+        elif action['action'] == 'stop':
+            rds_client.stop_db_instance(DBInstanceIdentifier=instance_id)
+            print(f"Stopped RDS instance: {instance_id}")
 
 EOF
   filename = "${path.module}/lambda_files/lambda_function.py"
