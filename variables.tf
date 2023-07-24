@@ -11,8 +11,8 @@ variable "events" {
 }
 
 variable "timeout" {
-  default = 60
-  type = number
+  default     = 60
+  type        = number
   description = "Lambda functions have a timeout of 60 seconds. When the Lambda service first launched, it allowed a maximum of only 900 seconds"
 }
 

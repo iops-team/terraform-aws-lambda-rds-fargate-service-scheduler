@@ -26,7 +26,7 @@ module "rds_fargate_scheduler" {
   }
 
   event_description = "Manage ECS and RDS based on tags and schedule"
-  
+
   tags = {
     Environment = "Production"
     Terraform   = "True"

@@ -5,11 +5,12 @@ This Terraform module creates an AWS Lambda function that manages Amazon ECS (El
 ## Features
 
 - Automatic management of ECS services and RDS instances based on tags and schedule.
+- Supports updating the entire cluster if it has a specific tag or updating individual services if the cluster does not have a tag but the service has one.
+- If the cluster has a specific tag, the Lambda function can update the entire cluster, but if the cluster does not have the specified tag, the function can update individual ECS services using their respective tags.
 - Supports starting and stopping of ECS services and RDS instances.
 - Customizable scheduling using cron expressions.
 - Tag-based filtering to identify the resources to be managed.
 - Supports configuration of tags and other settings through module inputs.
-
 
 ## Example Usage
 
@@ -28,14 +29,14 @@ module "ecs_rds_manager" {
       desired_count            = "3"
       tag_key                  = "Lambda"
       tag_value                = "True"
-      cron_schedule_expression = "cron(0/2 * ? * * *)"
+      cron_schedule_expression = "cron(0/15 * ? * * *)"
       rds_action               = "start"
     },
     stop = {
       desired_count            = "0"
       tag_key                  = "Lambda"
       tag_value                = "True"
-      cron_schedule_expression = "cron(0/2 * ? * * *)"
+      cron_schedule_expression = "cron(0/30 * ? * * *)"
       rds_action               = "stop"
     }
   }
@@ -88,9 +89,10 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_event_description"></a> [event\_description](#input\_event\_description) | Cloudwatch event description | `string` | `null` | no |
-| <a name="input_events"></a> [events](#input\_events) | Map of event objects | <pre>map(object({<br>    desired_count            = string<br>    tag_key                  = string<br>    tag_value                = string<br>    cron_schedule_expression = string<br>    rds_action               = string<br>  }))</pre> | `{}` | yes |
+| <a name="input_events"></a> [events](#input\_events) | Map of event objects | <pre>map(object({<br>    desired_count            = string<br>    tag_key                  = string<br>    tag_value                = string<br>    cron_schedule_expression = string<br>    rds_action               = string<br>    timeout                  = number<br>  }))</pre> | `{}` | yes |
 | <a name="input_lambda_function_name"></a> [lambda\_function\_name](#input\_lambda\_function\_name) | Name of the Lambda function | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
+| <a name="input_timeout"></a> [timeout](#input\_timeout) | Lambda function timeout in seconds | `number` | `60` | no |
 
 ## Outputs
 
