@@ -1,7 +1,7 @@
 variable "events" {
   description = "Map of event objects"
   type = map(object({
-    desired_count            = string
+    desired_count            = optional(string)
     tag_key                  = string
     tag_value                = string
     cron_schedule_expression = string
