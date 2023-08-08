@@ -60,7 +60,7 @@ def lambda_handler(event, context):
             print(f"Stopped RDS instance: {instance_id}")
 
 EOF
-  filename = "${path.module}/lambda_files/lambda_function.py"
+  filename = "${path.module}/lambda_files/${var.lambda_function_name}.py"
 }
 
 
