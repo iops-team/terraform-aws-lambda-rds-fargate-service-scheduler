@@ -140,7 +140,7 @@ EOF
 resource "aws_lambda_function" "lambda_function" {
   function_name = var.lambda_function_name
   role          = aws_iam_role.lambda_role.arn
-  handler       = "lambda_function.lambda_handler"
+  handler       = "${var.lambda_function_name}.lambda_handler"
   timeout       = var.timeout
 
   filename         = data.archive_file.lambda_zip.output_path
