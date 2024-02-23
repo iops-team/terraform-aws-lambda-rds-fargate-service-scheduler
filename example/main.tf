@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 module "rds_fargate_scheduler" {
-  source = "../../"
+  source = "iops-team/lambda-rds-fargate-service-scheduler/aws"
 
   lambda_function_name = "ecs_rds_scheduler"
   timeout              = 90

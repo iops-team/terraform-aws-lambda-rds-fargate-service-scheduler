@@ -1,3 +1,7 @@
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
+
 resource "local_file" "lambda_function" {
   content  = <<EOF
 import boto3
@@ -98,43 +102,46 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
   name = "${var.lambda_function_name}-policy"
   role = aws_iam_role.lambda_role.id
 
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "arn:aws:logs:*:*:*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ecs:ListClusters",
-        "ecs:ListServices",
-        "ecs:ListTagsForResource",
-        "ecs:UpdateService"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "rds:DescribeDBInstances",
-        "rds:ListTagsForResource",
-        "rds:StartDBInstance",
-        "rds:StopDBInstance"
-      ],
-      "Resource": "*"
-    }
-  ]
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda_function_name}:*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ecs:ListClusters",
+          "ecs:ListServices",
+          "ecs:ListTagsForResource",
+          "ecs:UpdateService"
+        ],
+        Resource = [
+          "arn:aws:ecs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:cluster/*",
+          "arn:aws:ecs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:service/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "rds:DescribeDBInstances",
+          "rds:ListTagsForResource",
+          "rds:StartDBInstance",
+          "rds:StopDBInstance"
+        ],
+        Resource = "arn:aws:rds:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:db:*"
+      }
+    ]
+  })
 }
-EOF
-}
+
+
 
 
 resource "aws_lambda_function" "lambda_function" {

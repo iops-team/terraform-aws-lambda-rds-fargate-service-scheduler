@@ -20,9 +20,9 @@ provider "aws" {
 }
 
 module "ecs_rds_manager" {
-  source = "path/to/module"  # Replace with the actual path to the module
+  source  = "iops-team/lambda-rds-fargate-service-scheduler/aws"
 
-  lambda_function_name = "ecs_rds_manager"
+  lambda_function_name = "ecs_rds_scheduler"
 
   events = {
     start = {
