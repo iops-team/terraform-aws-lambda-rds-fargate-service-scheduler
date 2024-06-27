@@ -29,3 +29,6 @@ override.tf.json
 terraform.rc
 *.zip
 *.py
+
+# Ignore IntelliJ IDEA files
+.idea
