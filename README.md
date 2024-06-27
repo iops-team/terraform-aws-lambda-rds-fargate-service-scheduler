@@ -1,13 +1,13 @@
 # Terraform Module: ECS and RDS Manager
 
-This Terraform module creates an AWS Lambda function that manages Amazon ECS (Elastic Container Service) and RDS (Relational Database Service) resources based on tags and a schedule. It provides the ability to start or stop ECS services and RDS instances based on specified criteria.
+This Terraform module creates an AWS Lambda function that manages Amazon ECS (Elastic Container Service) and RDS (Relational Database Service) resources, including RDS Aurora, based on tags and a schedule. It provides the ability to start or stop ECS services and RDS instances based on specified criteria.
 
 ## Features
 
-- Automatic management of ECS services and RDS instances based on tags and schedule.
+- Automatic management of ECS services and RDS instances, including RDS Aurora, based on tags and schedule.
 - Supports updating the entire cluster if it has a specific tag or updating individual services if the cluster does not have a tag but the service has one.
 - If the cluster has a specific tag, the Lambda function can update the entire cluster, but if the cluster does not have the specified tag, the function can update individual ECS services using their respective tags.
-- Supports starting and stopping of ECS services and RDS instances.
+- Supports starting and stopping of ECS services and RDS instances, including RDS Aurora.
 - Customizable scheduling using cron expressions.
 - Tag-based filtering to identify the resources to be managed.
 - Supports configuration of tags and other settings through module inputs.
