@@ -131,6 +131,12 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
         Effect = "Allow",
         Action = [
           "ecs:ListClusters",
+        ],
+        Resource = ["*"]
+      },
+      {
+        Effect = "Allow",
+        Action = [
           "ecs:ListServices",
           "ecs:ListTagsForResource",
           "ecs:UpdateService"
