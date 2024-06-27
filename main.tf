@@ -1,7 +1,6 @@
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
-
 resource "local_file" "lambda_function" {
   content  = <<EOF
 import boto3
@@ -10,7 +9,7 @@ import os
 def lambda_handler(event, context):
     ecs_client = boto3.client('ecs')
     rds_client = boto3.client('rds')
-    
+
     ecs_actions = []  # To store ECS actions
     rds_actions = []  # To store RDS actions
 
@@ -48,6 +47,17 @@ def lambda_handler(event, context):
                     rds_actions.append({'action': 'stop', 'instanceIdentifier': instance['DBInstanceIdentifier']})
                 break
 
+    clusters = rds_client.describe_db_clusters()['DBClusters']
+    for cluster in clusters:
+        tags = rds_client.list_tags_for_resource(ResourceName=cluster['DBClusterArn'])['TagList']
+        for tag in tags:
+            if tag['Key'] == tag_key and tag['Value'] == tag_value:
+                if rds_action == 'start' and cluster['Status'] == 'stopped':
+                    rds_actions.append({'action': 'start', 'instanceIdentifier': cluster['DBClusterIdentifier'], 'type': 'aurora'})
+                elif rds_action == 'stop' and cluster['Status'] == 'available':
+                    rds_actions.append({'action': 'stop', 'instanceIdentifier': cluster['DBClusterIdentifier'], 'type': 'aurora'})
+                break
+
     # Execute the collected ECS actions
     for action in ecs_actions:
         ecs_client.update_service(cluster=action['cluster'], service=action['service'], desiredCount=action['desiredCount'])
@@ -57,17 +67,22 @@ def lambda_handler(event, context):
     for action in rds_actions:
         instance_id = action['instanceIdentifier']
         if action['action'] == 'start':
-            rds_client.start_db_instance(DBInstanceIdentifier=instance_id)
-            print(f"Started RDS instance: {instance_id}")
+            if action.get('type') == 'aurora':
+                rds_client.start_db_cluster(DBClusterIdentifier=instance_id)
+                print(f"Started Aurora DB cluster: {instance_id}")
+            else:
+                rds_client.start_db_instance(DBInstanceIdentifier=instance_id)
+                print(f"Started RDS instance: {instance_id}")
         elif action['action'] == 'stop':
-            rds_client.stop_db_instance(DBInstanceIdentifier=instance_id)
-            print(f"Stopped RDS instance: {instance_id}")
-
+            if action.get('type') == 'aurora':
+                rds_client.stop_db_cluster(DBClusterIdentifier=instance_id)
+                print(f"Stopped Aurora DB cluster: {instance_id}")
+            else:
+                rds_client.stop_db_instance(DBInstanceIdentifier=instance_id)
+                print(f"Stopped RDS instance: {instance_id}")
 EOF
   filename = "${path.module}/lambda_files/${var.lambda_function_name}.py"
 }
-
-
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
@@ -76,8 +91,6 @@ data "archive_file" "lambda_zip" {
 
   depends_on = [local_file.lambda_function]
 }
-
-
 
 resource "aws_iam_role" "lambda_role" {
   name               = "${var.lambda_function_name}-role"
@@ -131,18 +144,21 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
         Effect = "Allow",
         Action = [
           "rds:DescribeDBInstances",
+          "rds:DescribeDBClusters",
           "rds:ListTagsForResource",
           "rds:StartDBInstance",
-          "rds:StopDBInstance"
+          "rds:StopDBInstance",
+          "rds:StartDBCluster",
+          "rds:StopDBCluster"
         ],
-        Resource = "arn:aws:rds:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:db:*"
+        Resource = [
+          "arn:aws:rds:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:db:*",
+          "arn:aws:rds:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:cluster:*"
+        ]
       }
     ]
   })
 }
-
-
-
 
 resource "aws_lambda_function" "lambda_function" {
   function_name = var.lambda_function_name
