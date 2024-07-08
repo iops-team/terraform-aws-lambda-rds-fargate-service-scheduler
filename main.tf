@@ -41,10 +41,11 @@ def lambda_handler(event, context):
         tags = rds_client.list_tags_for_resource(ResourceName=instance['DBInstanceArn'])['TagList']
         for tag in tags:
             if tag['Key'] == tag_key and tag['Value'] == tag_value:
-                if rds_action == 'start' and instance['DBInstanceStatus'] == 'stopped':
-                    rds_actions.append({'action': 'start', 'instanceIdentifier': instance['DBInstanceIdentifier']})
-                elif rds_action == 'stop' and instance['DBInstanceStatus'] == 'available':
-                    rds_actions.append({'action': 'stop', 'instanceIdentifier': instance['DBInstanceIdentifier']})
+                if 'aurora' not in instance['DBInstanceClass'].lower():  # Skip Aurora instances
+                    if rds_action == 'start' and instance['DBInstanceStatus'] == 'stopped':
+                        rds_actions.append({'action': 'start', 'instanceIdentifier': instance['DBInstanceIdentifier']})
+                    elif rds_action == 'stop' and instance['DBInstanceStatus'] == 'available':
+                        rds_actions.append({'action': 'stop', 'instanceIdentifier': instance['DBInstanceIdentifier']})
                 break
 
     clusters = rds_client.describe_db_clusters()['DBClusters']
